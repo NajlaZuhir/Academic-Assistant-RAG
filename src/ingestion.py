@@ -12,7 +12,9 @@ BASE_URL = "https://www.udst.edu.qa"
 INDEX_URL = f"{BASE_URL}/about-udst/institutional-excellence-ie/udst-policies-and-procedures"
 
 pdf_dir = "policy_pdfs"
+txt_dir = "policy_txts"
 os.makedirs(pdf_dir, exist_ok=True)
+os.makedirs(txt_dir, exist_ok=True)  # this line was missing
 
 def clean_text(text):
     """Cleans and normalizes text."""
@@ -80,18 +82,83 @@ def save_text_as_pdf(policy_name, text):
     pdf.output(pdf_path)
     return pdf_path
 
+# New
+def fetch_and_save_policy_text(url: str, policy_name: str) -> str | None:
+    """Fetches policy page and saves clean structured text to a .txt file."""
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.content, "html.parser")
+
+        # Remove noise
+        for tag in soup.find_all(["nav", "footer", "header", "script", "style", "aside"]):
+            tag.decompose()
+
+        main = soup.find("main") or soup.find("article") or soup.body
+        blocks = []
+
+        for element in main.descendants:
+            if not hasattr(element, "get_text"):
+                continue
+            text = element.get_text(separator=" ", strip=True)
+            if not text or len(text) < 10:
+                continue
+            if element.name in ("h1", "h2", "h3", "h4"):
+                blocks.append(f"\n## {text}\n")
+            elif element.name in ("p", "li"):
+                blocks.append(text)
+            elif element.name in ("td", "th"):
+                blocks.append(text)
+
+        # Deduplicate
+        seen, clean_blocks = set(), []
+        for b in blocks:
+            if b not in seen:
+                seen.add(b)
+                clean_blocks.append(b)
+
+        full_text = "\n".join(clean_blocks)
+
+        # Save as .txt
+        txt_path = os.path.join(txt_dir, policy_name.replace(" ", "_") + ".txt")
+        with open(txt_path, "w", encoding="utf-8") as f:
+            f.write(full_text)
+
+        return full_text
+
+    except requests.RequestException as e:
+        print(f"  [ERROR] {url}: {e}")
+        return None
+
+
+
+# if __name__ == "__main__":
+#     soup = get_soup(INDEX_URL)
+#     section = user_select_section(soup)
+#     policy_links = find_policy_links(soup, section)
+
+#     print("-" * 75)
+#     for policy_name, url in policy_links.items():
+#         print(f"Downloading {policy_name}...")
+#         policy_text = fetch_policy_text(url)
+        
+#         if policy_text:
+#             pdf_path = save_text_as_pdf(policy_name, policy_text)
+#             if pdf_path:
+#                 print(f"Saved PDF: {pdf_path}\n")
+
 if __name__ == "__main__":
     soup = get_soup(INDEX_URL)
     section = user_select_section(soup)
     policy_links = find_policy_links(soup, section)
 
-    print("-" * 75)
     for policy_name, url in policy_links.items():
-        print(f"Downloading {policy_name}...")
-        policy_text = fetch_policy_text(url)
+        print(f"Downloading: {policy_name}")
         
-        if policy_text:
-            pdf_path = save_text_as_pdf(policy_name, policy_text)
-            if pdf_path:
-                print(f"Saved PDF: {pdf_path}\n")
-
+        # Save clean .txt (used for chunking)
+        text = fetch_and_save_policy_text(url, policy_name)
+        
+        # Save PDF (for human reading)
+        if text:
+            save_text_as_pdf(policy_name, text)
+            print(f"  ✅ Saved txt + pdf\n")
