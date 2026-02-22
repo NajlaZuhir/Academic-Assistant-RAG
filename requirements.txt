@@ -1,10 +1,10 @@
 beautifulsoup4
 requests
-fpdf
 langchain
+langchain-text-splitters
 sentence-transformers 
 faiss-cpu 
 numpy
-pypdf
 python-dotenv
 mistralai
+langchain.text_splitter
