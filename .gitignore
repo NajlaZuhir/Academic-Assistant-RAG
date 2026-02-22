@@ -3,5 +3,6 @@ policy_pdfs/
 policy_chunks/
 policy_embeddings/
 policy_txts/
+policy_jsons/
 
 env/
