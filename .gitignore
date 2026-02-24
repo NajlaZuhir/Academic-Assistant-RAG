@@ -1,8 +1,5 @@
-
-policy_pdfs/
-policy_chunks/
-policy_embeddings/
-policy_txts/
-policy_jsons/
+catalog_chunks/
+catalog_embeddings/
+catalog_data/
 
 env/
