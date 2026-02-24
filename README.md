@@ -39,4 +39,4 @@ HF_TOKEN=your_hf_token_here
 streamlit run app.py
 ```
 
-** LLM RAG Project | 2026**
+**LLM RAG Project | 2026**
