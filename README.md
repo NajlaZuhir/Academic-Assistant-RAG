@@ -41,4 +41,4 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-LLM RAG Project | 2026
+**LLM RAG Project | 2025**
