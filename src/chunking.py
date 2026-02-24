@@ -1,4 +1,4 @@
-# 3) splits JSON policy text using semantic chunking with embeddings
+# chunking.py — chunks academic catalog pages into overlapping sections
 
 import os
 import re
@@ -7,148 +7,103 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-json_dir = "policy_jsons"
-chunks_dir = "policy_chunks"
+catalog_dir = "catalog_data"
+chunks_dir = "catalog_chunks"
 os.makedirs(chunks_dir, exist_ok=True)
 
-CHUNK_SIZE = 500        # target characters per chunk
-CHUNK_OVERLAP = 100     # character overlap
-EMBEDDING_MODEL = "all-MiniLM-L6-v2"
-SIMILARITY_THRESHOLD = 0.5  # merge chunks if similarity > threshold
+CHUNK_SIZE = 500 # max characters per chunk
+CHUNK_OVERLAP = 100
+EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5"
+SIMILARITY_THRESHOLD = 0.85
 
 
-def extract_text_from_json(json_data: dict) -> str:
-    """Extract and combine text from JSON policy structure"""
-    texts = []
-    
-    # Add headings
-    if "headings" in json_data.get("content", {}):
-        texts.extend(json_data["content"]["headings"])
-    
-    # Add paragraphs
-    if "paragraphs" in json_data.get("content", {}):
-        texts.extend(json_data["content"]["paragraphs"])
-    
-    # Add list items
-    if "lists" in json_data.get("content", {}):
-        for list_items in json_data["content"]["lists"]:
-            texts.extend(list_items)
-    
-    # Add table content
-    if "tables" in json_data.get("content", {}):
-        for table in json_data["content"]["tables"]:
-            for row in table:
-                texts.extend(row)
-    
-    return "\n".join(texts)
+def load_pages(catalog_dir: str) -> list[dict]:
+    """Load extracted catalog pages from JSON."""
+    path = os.path.join(catalog_dir, "catalog_pages.json")
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
 
 
 def clean_text(text: str) -> str:
-    """Normalize whitespace."""
-    return re.sub(r'\s+', ' ', text).strip()
+    """Normalize whitespace and remove noise."""
+    text = re.sub(r'\s+', ' ', text)
+    text = re.sub(r'\.{3,}', ' ', text)       # remove "......" leaders (common in PDF tables of contents)
+    text = re.sub(r'\b\d{1,3}\b(?=\s*$)', '', text)  # remove lone page numbers at end of line
+    return text.strip()
 
 
-def split_into_chunks_langchain(text: str) -> list[str]:
-    """Split text using LangChain's RecursiveCharacterTextSplitter."""
+def split_into_chunks(text: str) -> list[str]:
+    """Split text using LangChain RecursiveCharacterTextSplitter.
+    "Recursive" tries each separator in order"""
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=CHUNK_SIZE,
         chunk_overlap=CHUNK_OVERLAP,
-        separators=["\n\n", "\n", " ", ""]
+        separators=["\n\n", "\n", ". ", " ", ""]
     )
     return splitter.split_text(text)
 
 
-def merge_semantic_chunks(chunks: list[str], model: SentenceTransformer, similarity_threshold: float = SIMILARITY_THRESHOLD) -> list[str]:
-    """Merge chunks that are semantically similar."""
+def merge_semantic_chunks(chunks: list[str], model: SentenceTransformer) -> list[str]:
+    """Merge consecutive chunks that are semantically similar."""
     if len(chunks) <= 1:
         return chunks
-    
-    print(f"    Embedding {len(chunks)} chunks for semantic analysis...")
-    embeddings = model.encode(chunks, show_progress_bar=False)
-    
-    merged_chunks = [chunks[0]]
-    
+
+    embeddings = model.encode(chunks, show_progress_bar=False) # # turn each chunk into a vector
+    merged = [chunks[0]]
+
     for i in range(1, len(chunks)):
-        # Calculate similarity between current chunk and last merged chunk
-        current_embedding = embeddings[i]
-        last_embedding = embeddings[len(merged_chunks) - 1]
-        
-        # Cosine similarity
-        similarity = np.dot(current_embedding, last_embedding) / (
-            np.linalg.norm(current_embedding) * np.linalg.norm(last_embedding) + 1e-10
+        sim = np.dot(embeddings[i], embeddings[len(merged) - 1]) / (
+            np.linalg.norm(embeddings[i]) * np.linalg.norm(embeddings[len(merged) - 1]) + 1e-10
         )
-        
-        if similarity > similarity_threshold:
-            # Merge with previous chunk
-            merged_chunks[-1] += " " + chunks[i]
+        if sim > SIMILARITY_THRESHOLD:
+            merged[-1] += " " + chunks[i]
         else:
-            # Keep as separate chunk
-            merged_chunks.append(chunks[i])
-    
-    print(f"    Semantic merge: {len(chunks)} → {len(merged_chunks)} chunks")
-    return merged_chunks
+            merged.append(chunks[i])
+
+    return merged
 
 
-def chunk_policy(json_path: str, policy_name: str, json_data: dict, model: SentenceTransformer) -> list[dict]:
-    """Extract text from JSON and return semantically chunked dicts."""
+def chunk_catalog(pages: list[dict], model: SentenceTransformer) -> list[dict]:
+    """Process all pages into chunks with page metadata."""
+    all_chunks = []
+    chunk_id = 0
 
-    print(f"  Chunking: {policy_name}")
+    for page in pages: # orchestrator — loops every page through the 3 steps
+        text = clean_text(page["text"])
+        if not text or len(text) < 50:      # skip near-empty pages
+            continue
 
-    raw_text = extract_text_from_json(json_data)
-    text = clean_text(raw_text)
-    
-    # Initial split using LangChain
-    initial_chunks = split_into_chunks_langchain(text)
-    
-    # Merge semantically similar chunks
-    final_chunks = merge_semantic_chunks(initial_chunks, model)
+        initial_chunks = split_into_chunks(text)
+        final_chunks = merge_semantic_chunks(initial_chunks, model)
 
-    # Attach metadata to each chunk — important for retrieval later
-    return [
-        {
-            "chunk_id": f"{policy_name}__chunk_{i}",
-            "policy_name": policy_name,
-            "source": json_path,
-            "chunk_index": i,
-            "total_chunks": len(final_chunks),
-            "text": chunk,
-        }
-        for i, chunk in enumerate(final_chunks)
-    ]
+        for chunk in final_chunks: # metadata
+            all_chunks.append({
+                "chunk_id": f"catalog__chunk_{chunk_id}",
+                "page_number": page["page_number"],
+                "chunk_index": chunk_id,
+                "text": chunk,
+            })
+            chunk_id += 1
+
+    return all_chunks
 
 
 if __name__ == "__main__":
-    print("Loading embedding model for semantic chunking...")
+    print("Loading embedding model...")
     model = SentenceTransformer(EMBEDDING_MODEL)
-    
-    all_chunks = []
 
-    json_files = [f for f in os.listdir(json_dir) if f.endswith('.json')]
-    print(f"Found {len(json_files)} JSON files in '{json_dir}'\n")
+    print("Loading catalog pages...")
+    pages = load_pages(catalog_dir)
+    print(f"Loaded {len(pages)} pages\n")
 
-    for json_file in json_files:
-        json_path = os.path.join(json_dir, json_file)
-        policy_name = json_file.replace(".json", "").replace("_", " ")
-        
-        # Load JSON data
-        with open(json_path, 'r', encoding='utf-8') as f:
-            json_data = json.load(f)
+    print("Chunking...")
+    all_chunks = chunk_catalog(pages, model)
 
-        chunks = chunk_policy(json_path, policy_name, json_data, model) # chunk one policy with semantic merging
-        all_chunks.extend(chunks) # add to master list
-
-        # Save per-policy chunks as JSON
-        chunk_path = os.path.join(chunks_dir, json_file.replace(".json", ".json"))
-        with open(chunk_path, "w", encoding="utf-8") as f:
-            json.dump(chunks, f, indent=2, ensure_ascii=False)
-
-        print(f"  → {len(chunks)} chunks saved to {chunk_path}\n")
-
-    # Also save one combined file for easy loading later
-    combined_path = os.path.join(chunks_dir, "_all_chunks.json")
-    with open(combined_path, "w", encoding="utf-8") as f:
+    # Save combined chunks
+    output_path = os.path.join(chunks_dir, "_all_chunks.json")
+    with open(output_path, "w", encoding="utf-8") as f:
         json.dump(all_chunks, f, indent=2, ensure_ascii=False)
 
-    print(f"Total Policies: {len(json_files)}")
-    print(f"Total chunks across all policies: {len(all_chunks)}")
-    print(f"Combined file saved to: {combined_path}")
+    print(f"\nTotal chunks: {len(all_chunks)}")
+    print(f"Saved → {output_path}")
+    print(f"\nSample chunk:\n{all_chunks[0]['text'][:300]}")
