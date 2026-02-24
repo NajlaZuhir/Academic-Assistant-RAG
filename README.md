@@ -2,7 +2,7 @@
 # UDST Academic Assistant
 
 ## Overview
-The **UDST Academic Assistant is a chatbot** that answers questions using the University of Doha for Science and Technology (UDST) [Academic Catalog (2022–2023)](https://www.udst.edu.qa/sites/default/files/2023-01/AcademicCatalog2022-2023.pdf). It uses a **retrieval-augmented generation (RAG) approach**: the system retrieves relevant catalog excerpts and generates concise, citation-backed answers.
+The **UDST Academic Assistant is a chatbot** that answers questions using the University of Doha for Science and Technology (UDST) [Academic Catalog](https://www.udst.edu.qa/sites/default/files/2023-01/AcademicCatalog2022-2023.pdf). It uses a **retrieval-augmented generation (RAG) approach**: the system retrieves relevant catalog excerpts and generates concise, citation-backed answers.
 
 ## Models used
 - Embedding model: BAAI/bge-small-en-v1.5
