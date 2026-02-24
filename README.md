@@ -1,75 +1,84 @@
-# UDST Policy Chatbot 📚🤖
 
-## Overview
-The **UDST Policy Chatbot** is an AI-powered assistant designed to provide quick and accurate answers to questions about **University of Doha for Science & Technology (UDST)** policies. It utilizes **retrieval-augmented generation (RAG)** to fetch relevant policy information and present structured responses.
+# UDST Academic Assistant
 
-## Features
-- 📜 **Fetch and process university policies** from official UDST web pages.
-- 🤖 **AI-powered chatbot** for answering policy-related questions.
-- 🔍 **Retrieval-Augmented Generation (RAG)** to enhance accuracy.
-- 📄 **Automatic PDF generation** of policy documents.
-- 🌐 **Streamlit Web Interface** for an interactive chatbot experience.
+This repository contains a small Retrieval-Augmented Generation (RAG) pipeline and a Streamlit frontend for answering questions from the University of Doha for Science and Technology (UDST) Academic Catalog (2022–2023).
 
----
+Contents
+- [main.py](main.py): CLI pipeline that runs ingestion → chunking → embedding → retrieval → generation.
+- [app.py](app.py): Streamlit web UI that queries the embeddings and displays answers with source citations.
+- [requirements.txt](requirements.txt): Python dependencies required to run the project.
+- `src/` — core pipeline modules:
+	- [src/ingestion.py](src/ingestion.py): Download the catalog PDF and extract page-level text.
+	- [src/chunking.py](src/chunking.py): Clean and split pages into semantically coherent chunks.
+	- [src/embedding.py](src/embedding.py): Embed chunks into vectors and save to disk.
+	- [src/retrieval.py](src/retrieval.py): Load embeddings and perform semantic search.
+	- [src/generation.py](src/generation.py): Build prompt and call the LLM to generate answers.
 
-## Installation
-### 1️⃣ Clone the Repository
+Quick start
+
+1. Create and activate a Python virtual environment (recommended):
+
 ```bash
-git clone https://github.com/NajlaZuhir/Agnetic_UDST_Chatbot.git
-cd Agnetic_UDST_Chatbot
+python -m venv env
+source env/bin/activate
 ```
 
-### 2️⃣ Install Dependencies
-Ensure you have Python 3.8+ installed. Then run:
+2. Install dependencies:
+
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3️⃣ Set Up API Keys
-Create a `.env` file in the root directory and add:
+3. Create a `.env` file in the repo root and add your Hugging Face token:
+
 ```
-OPENAI_API_KEY=your_openai_api_key
+HF_TOKEN=your_hf_token_here
 ```
 
----
+Generating the index (one-time)
 
-## Usage
-### Run the Chatbot
+If you don't already have precomputed chunks/embeddings in `catalog_chunks/` and `catalog_embeddings/`, run the full pipeline which will:
+- Download the catalog PDF
+- Extract pages
+- Chunk pages
+- Compute embeddings
+
+```bash
+python main.py
+```
+
+This will create:
+- `catalog_data/catalog_pages.json`
+- `catalog_chunks/_all_chunks.json`
+- `catalog_embeddings/embeddings.npy`
+- `catalog_embeddings/chunks_metadata.json`
+
+Run the Streamlit app
+
+Start the web UI:
+
 ```bash
 streamlit run app.py
 ```
 
-### Ask a Policy Question
-- Example: *"How many absences are allowed before I risk failing?"*
-- The chatbot will return relevant policy details along with official UDST references.
+Usage notes
+- The assistant answers using only excerpts from the UDST Academic Catalog (2022–2023) and lists source page numbers for traceability.
+- To re-run only specific steps use the helper scripts in `src/`:
+	- Extract pages: run `python src/ingestion.py`
+	- Chunk pages: run `python src/chunking.py`
+	- Create embeddings: run `python src/embedding.py`
 
----
+Environment and configuration
+- The catalog URL is configured in `src/ingestion.py` (PDF_URL) and in `main.py` as `PDF_URL` — update if you need a different PDF.
+- The LLM client uses the `HF_TOKEN` environment variable. Ensure it is present in `.env` or exported in your shell.
 
-## Project Structure
-```
-📂 udst-policy-chatbot
-│-- 📜 Document.py (Extracts and saves policy data as PDFs)
-│-- 🤖 agnetic_rag_policies.py (AI-powered policy retrieval & RAG processing)
-│-- 🌐 app.py (Streamlit web app for chatbot UI)
-│-- 📄 requirements.txt (Dependencies list)
-│-- 🔑 .env (Stores OpenAI API key - NOT included in repo)
-│-- 📁 policy_pdfs/ (Stores downloaded policy documents)
-```
+Troubleshooting
+- If the Streamlit app fails to load embeddings, run `python main.py` to regenerate them and ensure `catalog_embeddings/` contains `embeddings.npy` and `chunks_metadata.json`.
+- If you get import errors, make sure your virtual environment is activated and dependencies from [requirements.txt](requirements.txt) are installed.
 
----
+License & attribution
+- This repository is a personal project sample built for UDST catalog retrieval. The catalog PDF is the authoritative source: https://www.udst.edu.qa/sites/default/files/2023-01/AcademicCatalog2022-2023.pdf
 
-## Technologies Used
-- 📝 **BeautifulSoup & Requests** - Web scraping for policy extraction
-- 📄 **FPDF** - PDF generation for offline policy storage
-- 🤖 **LlamaIndex** - RAG implementation for policy retrieval
-- 🔥 **OpenAI GPT** - AI-driven chatbot responses
-- 🌐 **Streamlit** - Web UI for chatbot interaction
-
----
-
-## Contributing
-Feel free to fork this repository, submit issues, or suggest improvements! 🚀
-
-
-Note: Check the Other Agentic Rag Approaches Folder for different implementation approaches
+Contact
+- For questions about this code or to request improvements, open an issue or contact the repository owner.
 
