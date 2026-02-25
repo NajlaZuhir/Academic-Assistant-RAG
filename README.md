@@ -54,10 +54,10 @@ PDF Catalog → Extract Pages → Chunk → Embed → Semantic Search → LLM An
 pip install -r requirements.txt
 
 # Create a `.env` file in the repo root and add your Hugging Face token:
-# HF_TOKEN=your_hf_token_here
+HF_TOKEN=your_hf_token_here
 
 # Run the pipeline** (first time only — downloads PDF, chunks, embeds)
-# python main.py
+python main.py
 
 # Run the web UI
 streamlit run app.py
