@@ -4,7 +4,6 @@
 A **Retrieval-Augmented Generation (RAG)** chatbot that answers student questions 
 using the University of Doha for Science and Technology (UDST) [Academic Catalog](https://www.udst.edu.qa/sites/default/files/2023-01/AcademicCatalog2022-2023.pdf). 
 
----
 ## 💡 How It Works
 ```
 PDF Catalog → Extract Pages → Chunk → Embed → Semantic Search → LLM Answer
@@ -15,7 +14,6 @@ PDF Catalog → Extract Pages → Chunk → Embed → Semantic Search → LLM An
 4. **Retrieval** — Finds the most relevant chunks for a user query via cosine similarity
 5. **Generation** — Sends retrieved chunks + query to LLaMA to generate a cited answer
    
----
 ## 🤖 Models
 
 | Role | Model |
@@ -23,7 +21,6 @@ PDF Catalog → Extract Pages → Chunk → Embed → Semantic Search → LLM An
 | Embedding | `BAAI/bge-small-en-v1.5` |
 | Language Model | `meta-llama/Llama-3.1-8B-Instruct` |
 
----
 
 ## 🛠️ Tech Stack
 
@@ -36,7 +33,6 @@ PDF Catalog → Extract Pages → Chunk → Embed → Semantic Search → LLM An
 - **pypdf** — PDF extraction
 
   
----
 ## 📁 Project Structure
 ```
 ├── src/
@@ -66,7 +62,7 @@ pip install -r requirements.txt
 # Run the web UI
 streamlit run app.py
 ```
----
+
 ## 💬 Example Questions
 
 - What are the admission requirements?
