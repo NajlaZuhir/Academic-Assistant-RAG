@@ -43,7 +43,7 @@ PDF Catalog → Extract Pages → Chunk → Embed → Semantic Search → LLM An
 │   └── generation.py     # Build prompt and call the LLM to generate answers
 ├── main.py               # CLI pipeline: ingestion → chunking → embedding → retrieval → generation
 ├── app.py                # Streamlit  Chat UI
-├── api.py             # FastAPI REST endpoint
+├── api.py                # FastAPI REST endpoint
 └── requirements.txt
 ```
 
