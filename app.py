@@ -96,7 +96,7 @@ with st.sidebar:
 st.markdown('<h1 class="global-title">📚 UDST ACADEMIC ASSISTANT</h1>', unsafe_allow_html=True)
 st.markdown("""
 <p style="text-align: center; font-size: 18px; color: #555;">
-  Ask questions about UDST academic policies and get instant answers.
+    Ask questions about the UDST Academic Catalog and get instant answers.
 </p>
 """, unsafe_allow_html=True)
 
@@ -171,6 +171,6 @@ if prompt:
 st.markdown("---")
 st.markdown("""
 <div style="text-align: center; color: grey;">
-    <p>📋 Responses are based on the UDST Academic Catalog</p>
+    <p>Responses are based on the UDST Academic Catalog</p>
 </div>
 """, unsafe_allow_html=True)

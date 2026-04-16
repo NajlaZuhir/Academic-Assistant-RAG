@@ -12,7 +12,7 @@ PDF Catalog → Extract Pages → Chunk → Embed → Semantic Search → LLM An
 2. **Chunking** — Cleans and splits pages into semantically coherent chunks
 3. **Embedding** — Converts chunks into vectors using BGE and saves to disk
 4. **Retrieval** — Finds the most relevant chunks for a user query via cosine similarity
-5. **Generation** — Sends retrieved chunks + query to LLaMA to generate a cited answer
+5. **Generation** — Sends retrieved chunks + query to LLaMA to generate a grounded answer
    
 ## 🤖 Models
 
@@ -56,7 +56,7 @@ pip install -r requirements.txt
 # Create a `.env` file in the repo root and add your Hugging Face token:
 HF_TOKEN=your_hf_token_here
 
-# Run the pipeline** (first time only — downloads PDF, chunks, embeds)
+# Run the pipeline (first time only — downloads PDF, chunks, embeds)
 python main.py
 
 # Run the web UI
